@@ -1,6 +1,5 @@
 import os
 import webbrowser
-import shutil
 import datetime
 from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup, escape
@@ -20,9 +19,7 @@ class ResumeLogic:
     
     #証明写真の差し替え、正常ならユーザが指定したパスを返す
     def update_id_photo(self, selected_source_path):
-        destination_path = os.path.join(self.base_path, "select_photo.png")
         try:
-            shutil.copy(selected_source_path, destination_path)
             return selected_source_path
             
         except PermissionError:

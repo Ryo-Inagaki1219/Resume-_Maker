@@ -191,6 +191,7 @@ class MainGui(tk.Tk):
         self.photo_frme.pack(anchor="w")
         self.photo_label=tk.Label(self.photo_frme,width=45,bg="LightGrey")
         self.photo_label.pack(side="left")
+        self.image_path="select_photo.png" #証明写真のpathを相対位置デフォルトに変更
         self.photo_select_button=tk.Button(self.photo_frme,text="写真を選択",command=self.photo_select,width=10)
         self.photo_select_button.pack(side="left",padx=5)
 
@@ -233,13 +234,14 @@ class MainGui(tk.Tk):
         )
         self.btn_action.pack(pady=5)
     
-    #フォルダから写真を選択する
+    #フォルダから写真を選択し写真のpathをデフォルトから変更
     def photo_select(self):
         idir="C:\\" 
         filetype = [("画像ファイル", "*.jpg;*.png;*.jpeg")]
         self.selected_path = filedialog.askopenfilename(filetypes=filetype, initialdir=idir)
         self.photo_label["text"]=self.logic.update_id_photo(self.selected_path)
-
+        self.image_path="file:///"+self.photo_label.cget("text")#証明写真を絶対位置、選択したものに変更
+        
     #生年月日のGUI作成
     def create_birth_date(self):
         
@@ -291,7 +293,9 @@ class MainGui(tk.Tk):
 
     #GUIより情報取得、PDF発行
     def create_pdf(self):
+        print(self.image_path)
         self.user_inputs = {
+            "image_path": self.image_path,
             "user_name": { "kanji": self.kanji_entry.get_text(), "furigana": self.furigana_entry.get_text()},
             "birth_date":{"year":self.birth_date_year.get(),"month":self.birth_date_month.get(),"day":self.birth_date_day.get()},
             "old":self.old_entry.get(),
