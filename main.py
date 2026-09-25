@@ -1,8 +1,9 @@
 # main.py
 from logic import ResumeLogic
+from logic import Keeplogic
+from logic import Photologic
 import tkinter as tk
 from tkinter import font
-from tkinter import messagebox
 from tkinter import ttk
 from tkinter import filedialog
 
@@ -36,6 +37,9 @@ class LabeledEntry(tk.Frame):
         self.entry = tk.Entry(self,width=entry_size)
         self.entry.pack(expand=True, anchor="w")
 
+    def set_text(self,input_text):
+        self.entry.insert(0, input_text)
+
     def get_text(self):
         return self.entry.get()
 
@@ -61,7 +65,13 @@ class DayEntry(tk.Frame):
 
         self.text_organization = tk.Entry(self,width=40)
         self.text_organization.pack(side="left", padx=1)
-    
+
+    def set_data(self,input_data:dict):
+            yyyy= input_data.get("year", "")
+            mm= input_data.get("month", "")
+            text=input_data.get("organization", "")
+            self.data={"year":self.year_entry.insert(0,yyyy),"month":self.month_entry.insert(0,mm),"organization":self.text_organization.insert(0,text)}
+
     def get_data(self):
         self.data={"year":self.year_entry.get(),"month":self.month_entry.get(),"organization":self.text_organization.get()}
         return self.data
@@ -89,6 +99,15 @@ class CareerSet(tk.LabelFrame):
         for i in range(row_count):
             new_DayEntry = DayEntry(self)
             self.DayEntry_list.append(new_DayEntry)
+
+    def set_data(self,key_name,input_data: dict):
+        count:int=1
+        for that_DayEntry in self.DayEntry_list:
+            search_key=key_name+str(count)
+            DayEntry_data:dict= input_data.get(search_key, {})
+            that_DayEntry.set_data(DayEntry_data)
+            count+=1
+            
         
     def get_data(self,key_name):
         count:int=1
@@ -107,6 +126,7 @@ class ContactSet(tk.LabelFrame):
         super().__init__(parent,text=title,pady=5)
         self.pack(pady=2,anchor="w")
         self.vcmd = self.register(character_limit)
+        self.create_post_code()
 
         self.furigana=LabeledEntry(self, "住所(ふりがな)",60)
         self.main_text=LabeledEntry(self, "住所(漢字)",60)
@@ -115,7 +135,7 @@ class ContactSet(tk.LabelFrame):
       
         self.telephone_number=LabeledEntry(self, "電話番号")
         self.email_address=LabeledEntry(self, "e-mail")
-        self.create_post_code()
+    
     
     #郵便番号のGUI作成
     def create_post_code(self):
@@ -143,20 +163,43 @@ class ContactSet(tk.LabelFrame):
     #情報送信の関数
     def get_data(self):
         """郵便番号のレイアウト崩れの対策の為、未入力の際は3文字と4文字の空文字を挿入"""
-        self.post_code_firs_value=self.post_code_first.get()
+        self.post_code_first_value=self.post_code_first.get()
         if self.post_code_first.get()=="":
-            self.post_code_firs_value="　　　" 
+            self.post_code_first_value="　　　" 
         
         self.post_code_latter_value=self.post_code_latter.get()
         if self.post_code_latter.get()=="":
             self.post_code_latter_value="　　　　"
         
-        self.data= {"post_code":self.post_code_firs_value+"-"+self.post_code_latter_value,
+        self.data= {"post_code_first":self.post_code_first_value,
+                "post_code_latter":self.post_code_latter_value,
                 "main_text":self.main_text.get_text(),
                 "furigana":self.furigana.get_text(),
                 "telephone_number":self.telephone_number.get_text(),
                 "email_address":self.email_address.get_text()}
         return self.data
+
+    def set_data(self,input_data: dict):
+        post_code_fast_data:str = input_data.get("post_code_first", "")
+        post_code_fast_data=post_code_fast_data.replace("　", "")
+        self.post_code_first.insert(0,post_code_fast_data)
+
+        post_code_latter_data:str= input_data.get("post_code_latter", "")
+        post_code_latter_data=post_code_latter_data.replace("　", "")
+        self.post_code_latter.insert(0,post_code_latter_data)
+
+        main_text_data = input_data.get("main_text", "")
+        self.main_text.set_text(main_text_data)
+
+        furigana_data = input_data.get("furigana", "")
+        self.furigana.set_text(furigana_data)
+
+        telephone_number_data = input_data.get("telephone_number", "")
+        self.telephone_number.set_text(telephone_number_data)
+
+        telephone_number_data = input_data.get("email_address", "")
+        self.email_address.set_text(telephone_number_data)
+        
 
         
 
@@ -165,10 +208,15 @@ class MainGui(tk.Tk):
     def __init__(self):
         super().__init__()
         self.logic = ResumeLogic()
+        self.keep=Keeplogic()
+        self.photo=Photologic()
+
 
         default_font = font.nametofont("TkDefaultFont")
         default_font.configure(size=15)
         self.option_add("*Entry.font", default_font)
+        #終了時
+        self.protocol("WM_DELETE_WINDOW", self.write_recod)
         
         self.title("title")
         self.geometry("800x610")
@@ -191,7 +239,9 @@ class MainGui(tk.Tk):
         self.photo_frme.pack(anchor="w")
         self.photo_label=tk.Label(self.photo_frme,width=45,bg="LightGrey")
         self.photo_label.pack(side="left")
-        self.image_path="select_photo.png" #証明写真のpathを相対位置デフォルトに変更
+        #証明写真のpathを相対位置デフォルトに変更
+        self.photo_label["text"]=self.photo.get_default_path()
+        self.image_path="file:///"+self.photo_label.cget("text")
         self.photo_select_button=tk.Button(self.photo_frme,text="写真を選択",command=self.photo_select,width=10)
         self.photo_select_button.pack(side="left",padx=5)
 
@@ -233,13 +283,74 @@ class MainGui(tk.Tk):
             height=2
         )
         self.btn_action.pack(pady=5)
-    
+        self.json_loading()
+
+    #作業データの読み取り
+    def json_loading(self):
+        print("読み取り開始")
+        if(self.keep.search_json()):
+            self.loading_date=self.keep.load_json()
+            print(self.loading_date)
+            #ここに写真パスを設定
+            keep_image_path_data=self.loading_date.get("image_path","")
+            if(self.photo.search_photo(keep_image_path_data)):
+                self.photo_label["text"]=keep_image_path_data
+                self.image_path="file:///"+self.photo_label.cget("text")
+
+             #名前欄を入力
+            keep_user_name_data=self.loading_date.get("user_name",{})
+            keep_furigana_data=keep_user_name_data.get("furigana","")
+            self.furigana_entry.set_text(keep_furigana_data)
+            keep_kanji_data=keep_user_name_data.get("kanji","")
+            self.kanji_entry.set_text(keep_kanji_data)
+
+             #生年月日欄を入力
+            keep_birth_data=self.loading_date.get("birth_date",{})
+            keep_year_data=keep_birth_data.get("year","")
+            self.birth_date_year.insert(0,keep_year_data)
+            keep_month_data=keep_birth_data.get("month","")
+            self.birth_date_month.insert(0,keep_month_data)
+            keep_month_data=keep_birth_data.get("day","")
+            self.birth_date_day.insert(0,keep_month_data)
+
+            keep_old_data=self.loading_date.get("old","")
+            self.old_entry.insert(0,keep_old_data)
+             #性別欄を入力
+            keep_gender_data=self.loading_date.get("gender","")
+            self.gender_entry.set_text(keep_gender_data)
+
+            #住所と連絡先を入力
+            keep_current_address_data=self.loading_date.get("current_address",{})
+            self.current_address.set_data(keep_current_address_data)
+            keep_contact_information_data=self.loading_date.get("contact_information",{})
+            self.contact_information.set_data(keep_contact_information_data)
+
+            #経歴
+            keep_history_list_data=self.loading_date.get("history_list_kepp_data",{})
+            self.history_list.set_data("history",keep_history_list_data)
+
+            #資格
+            keep_qualified_list_data=self.loading_date.get("qualified_list_kepp_data",{})
+            self.qualified_list.set_data("qualified",keep_qualified_list_data)
+
+            #PR欄
+            keep_pr_text_data=self.loading_date.get("pr_text","")
+            self.pr_text.insert(1.0,keep_pr_text_data)
+
+            keep_free_text_data=self.loading_date.get("free_text","")
+            self.free_text.insert(1.0,keep_free_text_data)
+        
+
+        
+
+            
+
+
     #フォルダから写真を選択し写真のpathをデフォルトから変更
     def photo_select(self):
         idir="C:\\" 
         filetype = [("画像ファイル", "*.jpg;*.png;*.jpeg")]
-        self.selected_path = filedialog.askopenfilename(filetypes=filetype, initialdir=idir)
-        self.photo_label["text"]=self.logic.update_id_photo(self.selected_path)
+        self.photo_label["text"]=filedialog.askopenfilename(filetypes=filetype, initialdir=idir)
         self.image_path="file:///"+self.photo_label.cget("text")#証明写真を絶対位置、選択したものに変更
         
     #生年月日のGUI作成
@@ -319,6 +430,39 @@ class MainGui(tk.Tk):
         #PDF発行命令
         self.output_file = "my_resume.pdf"
         self.logic.generate_pdf(self.output_file)
+
+    #記入の記録
+    def write_recod(self):
+        try:
+            self.output_recode={
+                "image_path": self.photo_label.cget("text"),
+                "user_name": { "kanji": self.kanji_entry.get_text(), "furigana": self.furigana_entry.get_text()},
+                "birth_date":{"year":self.birth_date_year.get(),"month":self.birth_date_month.get(),"day":self.birth_date_day.get()},
+                    "old":self.old_entry.get(),
+                    "gender":self.gender_entry.get_text(),
+                    "current_address":{
+                        **self.current_address.get_data()
+                    },
+                    "contact_information":{
+                        **self.contact_information.get_data()
+                    },
+                        
+                    "history_list_kepp_data":{
+                        **self.history_list.get_data("history")
+                    },
+            
+                    "qualified_list_kepp_data":{
+                        **self.qualified_list.get_data("qualified")
+                    },    
+                        "pr_text":self.pr_text.get("1.0", tk.END),
+                        "free_text":self.free_text.get("1.0", tk.END)
+                    }
+            self.keep.write_json(self.output_recode)
+            self.destroy()
+        except Exception as e:
+            print("保存時にエラーが起きました")
+            self.destroy()
+        
 
 if __name__ == "__main__":
     #main()

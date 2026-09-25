@@ -1,12 +1,56 @@
 import os
 import webbrowser
 import datetime
+import json
 from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup, escape
 gtk_path = r'C:\Program Files\GTK3-Runtime Win64\bin'
 if os.path.exists(gtk_path):
     os.add_dll_directory(gtk_path)
 from weasyprint import HTML
+
+class Photologic:
+    def __init__(self):
+        #相対パスの取得と保存パスの作成
+        self.base_path = os.path.dirname(os.path.abspath(__file__))
+        self.default_path=os.path.abspath("select_photo.png")
+
+    def get_default_path(self):
+        return self.default_path
+
+    def search_photo(self,search_path):
+            if os.path.exists(search_path):
+                return True
+            else:
+                return False
+
+class Keeplogic:
+    def __init__(self):
+        #相対パスの取得と保存パスの作成
+        self.base_path = os.path.dirname(os.path.abspath(__file__))
+        self.keepjson_path=os.path.join(self.base_path, "keep.json")
+
+    def search_json(self):
+        if os.path.exists(self.keepjson_path):
+            return True
+        else:
+            return False
+
+    def search_picture(self,image_path):
+            if os.path.exists(image_path):
+                return True
+            else:
+                return False
+    
+    def load_json(self):
+        with open(self.keepjson_path, 'r', encoding='utf-8') as json_open:
+            return json.load(json_open)
+
+    def write_json(self,task_data):
+        with open(self.keepjson_path, 'w',encoding='utf-8') as f:
+            json.dump(task_data, f)
+
+
 
 class ResumeLogic:
     def __init__(self):
@@ -16,18 +60,6 @@ class ResumeLogic:
     #入力情報の受け取り
     def input_user_data(self, user_data):
         self.user_data = user_data
-    
-    #証明写真の差し替え、正常ならユーザが指定したパスを返す
-    def update_id_photo(self, selected_source_path):
-        try:
-            return selected_source_path
-            
-        except PermissionError:
-            text="エラー: ID_photo.png が他のソフトで開かれているため上書きできませんでした。"
-            return text
-        except Exception as e:
-            text=f"予期せぬエラー: {e}"
-            return text
         
     #データの展開とPDFの作成
     def generate_pdf(self, output_filename, template_filename="template.html"):
